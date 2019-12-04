@@ -15,7 +15,7 @@
   Written by Tony DiCola for Adafruit Industries.
   MIT license, all text above must be included in any redistribution
  ****************************************************/
-#include <ESP8266WiFi.h>
+#include <ESP8266WiFi.h> // TODO: #include <Wifi.h> instead ? 
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
@@ -34,10 +34,6 @@
 /************************** Sven Stuff ***************************************/
 int input_switch = 2;
 int led = 4;
-unsigned long timer = 0;
-long threshold = 5000;
-long interval = threshold*2;
-int counter = 1;
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -55,17 +51,22 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 Adafruit_MQTT_Publish doorFeed = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/door");
 
 
+// I would like to test if this works, might not be necessary for final version
+Adafruit_MQTT_Subscribe onofflight = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onofflight");
+
+
 /*************************** Sketch Code ************************************/
 
+// TODO: Can we check if it also works without?
 // Bug workaround for Arduino 1.6.6, it seems to need a function declaration
 // for some reason (only affects ESP8266, likely an arduino-builder bug).
-void MQTT_connect();
+//void MQTT_connect();
 
 void setup() {
   Serial.begin(115200);
   delay(10);
 
-  Serial.println(F("Adafruit MQTT demo"));
+  Serial.println(F("Sven is waking up ... "));
   
   // Input for door switch
   pinMode (input_switch, INPUT_PULLUP);
@@ -84,14 +85,15 @@ void setup() {
   }
   Serial.println();
 
-  Serial.println("WiFi connected");
+  Serial.println("Sven is connected to WIFI");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
+
+  // Setup MQTT subscription for onoff feed.
+  mqtt.subscribe(&onofflight);
 
 }
 
 uint32_t x=0;
-
-
 
 void loop() {
 
@@ -102,47 +104,27 @@ void loop() {
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
   MQTT_connect();
-    
-  bool switch_state = digitalRead(input_switch);
 
+  // TODO: do we need to subscribe? for now to turn on / off led light for testing
+  Adafruit_MQTT_Subscribe *subscription;
+  while ((subscription = mqtt.readSubscription(5000))) {
+    if (subscription == &onofflight) {
+      Serial.print(F("Got value for light: "));
+      Serial.println((char *)onofflight.lastread);
+      if (!strcmp((char*) LED_Control.lastread, "ON")) {
+        digitalWrite(led, HIGH); 
+      } else {
+        digitalWrite(led, LOW); 
+      }
+    }
+  }
+
+  // Publish sven's status
   if (!doorFeed.publish(switch_state)) {
-    Serial.println(F("Failed"));
+    Serial.println(F("Couldn't send sven's status"));
   } else {
     Serial.println(F("OK!"));
   }
-  
-  Serial.print("timer = ");
-  Serial.println(timer);
- 
-  if (switch_state) {
-    Serial.println("open");
-    Serial.println(switch_state);
-    
-    if ((unsigned long)(millis() - timer) >= threshold) {
-      // if timer > 30 seconds, turn on light
-      digitalWrite(led, switch_state);
-      
-      if ((unsigned long)(millis() - timer) >= interval) {
-        // after that, send a warning every 30 seconds
-        Serial.print("WARNING #");
-        //counter=counter+1;
-        Serial.println(counter++);
-        interval+=threshold;
-      }
-    } 
-  } else {
-      Serial.println("closed");
-
-      /*
-       * light off and reset values
-       */
-      digitalWrite(led, switch_state); // light off
-      timer = millis(); // "reset" timer
-      counter = 1;
-      interval = threshold*2;
-  }
-
-  delay(1000);
 }
 
 // Function to connect and reconnect as necessary to the MQTT server.
