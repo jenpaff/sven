@@ -21,19 +21,19 @@
 
 /************************* WiFi Access Point *********************************/
 
-#define WLAN_SSID       "tw_guest"
-#define WLAN_PASS       "...your password..."
+#define WLAN_SSID       "twguest"
+#define WLAN_PASS       "....password...."
 
 /************************* Adafruit.io Setup *********************************/
 
 #define AIO_SERVER      "farmer.cloudmqtt.com"
 #define AIO_SERVERPORT   12892                    // use 8883 for SSL
 #define AIO_USERNAME    "hgjpspdi"
-#define AIO_KEY         "...password..."
+#define AIO_KEY         "....password...."
 
 /************************** Sven Stuff ***************************************/
-int input_switch = 2;
-int led = 4;
+int input_switch = 0;
+int led = 2;
 
 /************ Global State (you don't need to change this!) ******************/
 
@@ -94,6 +94,7 @@ void setup() {
 }
 
 uint32_t x=0;
+bool led_state = false;
 
 void loop() {
 
@@ -109,13 +110,8 @@ void loop() {
   Adafruit_MQTT_Subscribe *subscription;
   while ((subscription = mqtt.readSubscription(5000))) {
     if (subscription == &onofflight) {
-      Serial.print(F("Got value for light: "));
-      Serial.println((char *)onofflight.lastread);
-      if (!strcmp((char*) LED_Control.lastread, "ON")) {
-        digitalWrite(led, HIGH); 
-      } else {
-        digitalWrite(led, LOW); 
-      }
+        led_state = !led_state;
+        digitalWrite(led, led_state);
     }
   }
 
