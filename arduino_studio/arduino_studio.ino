@@ -15,7 +15,7 @@
   Written by Tony DiCola for Adafruit Industries.
   MIT license, all text above must be included in any redistribution
  ****************************************************/
-#include <ESP8266WiFi.h> // TODO: #include <Wifi.h> instead ? 
+#include <ESP8266WiFi.h> // TODO: #include <Wifi.h> instead ?
 #include "Adafruit_MQTT.h"
 #include "Adafruit_MQTT_Client.h"
 
@@ -27,20 +27,19 @@
 /************************* Adafruit.io Setup *********************************/
 
 #define AIO_SERVER      "farmer.cloudmqtt.com"
-#define AIO_SERVERPORT   12892                    // use 8883 for SSL
+#define AIO_SERVERPORT   12892                    // use 8883 for SSL / 12892 no SSL
 #define AIO_USERNAME    "hgjpspdi"
 #define AIO_KEY         "....password...."
 
 /************************** Sven Stuff ***************************************/
 int input_switch = 0;
-int led = 2;
 
 /************ Global State (you don't need to change this!) ******************/
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
-WiFiClient client;
+//WiFiClient client;
 // or... use WiFiFlientSecure for SSL
-//WiFiClientSecure client;
+WiFiClientSecure client;
 
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
@@ -67,11 +66,11 @@ void setup() {
   delay(10);
 
   Serial.println(F("Sven is waking up ... "));
-  
+
   // Input for door switch
   pinMode (input_switch, INPUT_PULLUP);
   // output for LED
-  pinMode (led, OUTPUT);
+  pinMode (LED_BUILTIN, OUTPUT);
 
   // Connect to WiFi access point.
   Serial.println(); Serial.println();
@@ -100,7 +99,7 @@ void loop() {
 
   // Read the door switch
   bool switch_state = digitalRead(input_switch);
-  
+
   // Ensure the connection to the MQTT server is alive (this will make the first
   // connection and automatically reconnect when disconnected).  See the MQTT_connect
   // function definition further below.
@@ -111,7 +110,7 @@ void loop() {
   while ((subscription = mqtt.readSubscription(5000))) {
     if (subscription == &onofflight) {
         led_state = !led_state;
-        digitalWrite(led, led_state);
+        digitalWrite(LED_BUILTIN, led_state);
     }
   }
 
