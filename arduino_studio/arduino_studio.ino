@@ -21,25 +21,25 @@
 
 /************************* WiFi Access Point *********************************/
 
-#define WLAN_SSID       "twguest"
-#define WLAN_PASS       "....password...."
+#define WLAN_SSID       ""
+#define WLAN_PASS       ""
 
 /************************* Adafruit.io Setup *********************************/
 
 #define AIO_SERVER      "farmer.cloudmqtt.com"
-#define AIO_SERVERPORT   12892                    // use 8883 for SSL / 12892 no SSL
-#define AIO_USERNAME    "hgjpspdi"
-#define AIO_KEY         "....password...."
+#define AIO_SERVERPORT   10812                    // use 8883 for SSL / 12892 no SSL
+#define AIO_USERNAME    ""
+#define AIO_KEY         ""
 
 /************************** Sven Stuff ***************************************/
-int input_switch = 0;
+int input_switch = D3;
 
 /************ Global State (you don't need to change this!) ******************/
 
 // Create an ESP8266 WiFiClient class to connect to the MQTT server.
-//WiFiClient client;
+WiFiClient client;
 // or... use WiFiFlientSecure for SSL
-WiFiClientSecure client;
+//WiFiClientSecure client;
 
 // Setup the MQTT client class by passing in the WiFi client and MQTT server and login details.
 Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO_KEY);
@@ -48,11 +48,6 @@ Adafruit_MQTT_Client mqtt(&client, AIO_SERVER, AIO_SERVERPORT, AIO_USERNAME, AIO
 
 // Feed where we will publish a message if the door is open
 Adafruit_MQTT_Publish doorFeed = Adafruit_MQTT_Publish(&mqtt, AIO_USERNAME "/feeds/door");
-
-
-// I would like to test if this works, might not be necessary for final version
-Adafruit_MQTT_Subscribe onofflight = Adafruit_MQTT_Subscribe(&mqtt, AIO_USERNAME "/feeds/onofflight");
-
 
 /*************************** Sketch Code ************************************/
 
@@ -69,8 +64,6 @@ void setup() {
 
   // Input for door switch
   pinMode (input_switch, INPUT_PULLUP);
-  // output for LED
-  pinMode (LED_BUILTIN, OUTPUT);
 
   // Connect to WiFi access point.
   Serial.println(); Serial.println();
@@ -86,14 +79,7 @@ void setup() {
 
   Serial.println("Sven is connected to WIFI");
   Serial.println("IP address: "); Serial.println(WiFi.localIP());
-
-  // Setup MQTT subscription for onoff feed.
-  mqtt.subscribe(&onofflight);
-
 }
-
-uint32_t x=0;
-bool led_state = false;
 
 void loop() {
 
@@ -105,22 +91,15 @@ void loop() {
   // function definition further below.
   MQTT_connect();
 
-  // TODO: do we need to subscribe? for now to turn on / off led light for testing
-  Adafruit_MQTT_Subscribe *subscription;
-  while ((subscription = mqtt.readSubscription(5000))) {
-    if (subscription == &onofflight) {
-        led_state = !led_state;
-        digitalWrite(LED_BUILTIN, led_state);
-    }
-  }
-
   // Publish sven's status
   if (!doorFeed.publish(switch_state)) {
     Serial.println(F("Couldn't send sven's status"));
   } else {
     Serial.println(F("OK!"));
   }
+  delay(1000);
 }
+
 
 // Function to connect and reconnect as necessary to the MQTT server.
 // Should be called in the loop function and it will take care if connecting.
